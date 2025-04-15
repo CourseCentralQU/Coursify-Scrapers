@@ -1,0 +1,5 @@
+# .gitignore
+apps/reddit-scraper/.env
+
+# venv
+apps/reddit-scraper/venv
