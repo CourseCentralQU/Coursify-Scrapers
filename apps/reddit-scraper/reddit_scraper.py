@@ -1,20 +1,20 @@
 import praw
 import os
-from dotenv import load_dotenv
 from supabase import create_client, Client
 from textblob import TextBlob
 
 # Load env variables
-load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Reddit setup
+REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
+REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 reddit = praw.Reddit(
-    client_id="your-client-id",
-    client_secret="your-client-secret",
-    user_agent="CourseCentralBot by /u/your_username"
+    client_id=REDDIT_CLIENT_ID,
+    client_secret=REDDIT_CLIENT_SECRET,
+    user_agent="CourseCentralBot by /u/CourseCentralQU"
 )
 
 # Example course list
@@ -53,16 +53,16 @@ def scrape_and_upload(course_code):
             tags = detect_tags(text)
             sentiment = get_sentiment(text)
 
-            response = supabase.table("course_comments").insert({
-                "course_code": course_code,
-                "professor_name": None,
-                "text": text,
-                "url": f"https://reddit.com{comment.permalink}",
-                "source": "reddit",
-                "tags": tags,
-                "sentiment": sentiment,
-                "comment_type": "reddit_auto"
-            }).execute()
+            # response = supabase.table("course_comments").insert({
+            #     "course_code": course_code,
+            #     "professor_name": None,
+            #     "text": text,
+            #     "url": f"https://reddit.com{comment.permalink}",
+            #     "source": "reddit",
+            #     "tags": tags,
+            #     "sentiment": sentiment,
+            #     "comment_type": "reddit_auto"
+            # }).execute()
 
             print("✅ Uploaded comment:", text[:60], "...")
 
