@@ -17,7 +17,7 @@ def create_supabase_client():
 
 
 
-def scrape_course_data():
+def scrape_all_course():
     """
     Scrape course data from Queen's University website and store it in Supabase."""
     headers = { "Accept-Language": "en-US,en;q=0.9,en-GB;q=0.8,en-CA;q=0.7" }
@@ -351,9 +351,6 @@ def scrape_course_data():
 
     # Print success message
     print("✔ Successfully scraped Commerce courses!")
-    
-    course_data.to_csv("course_data.csv", index=False)
-    print("✔ Successfully saved course data to CSV!")
 
     # Drop duplicates
     course_data.drop_duplicates(subset=["course_code"], inplace=True)
@@ -389,16 +386,51 @@ def insert_course_data_to_supabase(supabase, course_data):
 
     print("✔ Successfully inserted course data into Supabase!")
 
+def check_and_add_new_courses(supabase, course_data):
+    """
+    Check for new courses and add them to Supabase if they don't already exist.
+    """
+    # Fetch existing courses from Supabase
+    existing_courses_response = supabase.table("courses").select("course_code").execute()
+    if existing_courses_response.error:
+        print(f"Error fetching existing courses: {existing_courses_response.error}")
+        return
+
+    # Extract existing course codes
+    existing_course_codes = {course["course_code"] for course in existing_courses_response.data}
+
+    # Filter new courses
+    new_courses = course_data[~course_data["course_code"].isin(existing_course_codes)]
+
+    # Insert new courses into Supabase
+    for index, row in new_courses.iterrows():
+        supabase.table("courses").insert({
+            "course_code": row["course_code"],
+            "course_name": row["course_name"],
+            "course_description": row["course_description"],
+            "offering_faculty": row["offering_faculty"],
+            "learning_hours": row["learning_hours"],
+            "course_learning_outcomes": row["course_learning_outcomes"],
+            "course_requirements": row["course_requirements"],
+            "course_equivalencies": row["course_equivalencies"],
+            "course_units": row["course_units"],
+            "average_gpa": None,  # Placeholder for average GPA
+            "average_enrollment": None  # Placeholder for average enrollment
+        }).execute()
+        print(f"Added new course: {row['course_code']} - {row['course_name']}")
+
+    print(f"✔ Successfully added {len(new_courses)} new courses to Supabase!")
+
 
 if __name__ == "__main__":
     # Create Supabase client
     supabase = create_supabase_client()
     
     # Scrape course data
-    course_data = scrape_course_data()
+    course_data = scrape_all_course()
     
-    # Insert course data into Supabase
-    insert_course_data_to_supabase(supabase, course_data)
+    # Check for new courses and add them to Supabase
+    check_and_add_new_courses(supabase, course_data)
 
     # Print success message
-    print("✔ Course data scraping and insertion completed successfully!")
+    print("✔ Periodic course data check and update completed successfully!")
