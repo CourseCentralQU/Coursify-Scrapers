@@ -6,6 +6,7 @@
    - Replace hero visual with a [Cursorful demo](https://www.cursor.sh)
    - Footer + remove Schools page
    - Add yourself to Team page
+   - A feature that says "is this not up to date, update this". This will fetch the up to date course info and update it in the database.
 
 2. **Web Scraping for Reddit Reviews**
 
