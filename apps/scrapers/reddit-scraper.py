@@ -218,15 +218,19 @@ def is_post_of_interest(post):
     
 
 def scrape_and_store():
-    # TODO:
-    # Make it get posts > 1000 since praw only gets the last 1000 posts
-    # Since this runs every week, adjust this so that it doesn't get the same posts again
-
-
     subreddit = reddit.subreddit("queensuniversity")
     results = []
 
-    for post in subreddit.new(limit=None):
+    # Fetch already processed posts from Supabase by using post url (source_url)
+    processed_posts = supabase.table("rag_chunks").select("source_url").execute()
+    processed_posts_urls = {post["source_url"] for post in processed_posts.data}
+
+    for post in subreddit.new(limit=1000):
+
+        # Check if the post has already been processed
+        if f"https://reddit.com{post.permalink}" in processed_posts_urls:
+            print(f"Skipping already processed post: {post.title[:60]}...")
+            continue
 
         # Determine if this is a post of interest, if not, skip it
         if not is_post_of_interest(post):
