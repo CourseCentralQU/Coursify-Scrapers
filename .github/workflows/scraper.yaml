@@ -3,7 +3,7 @@ name: Run Scrapers
 on:
   schedule:
     - cron: "0 0 * * 0" # Every Sunday
-    - cron: "0 0 1 5,8,12 *" # NEW: 1st of May, August, and December at 00:00 UTC
+    - cron: "0 0 1 5,8,12 *" # 1st of May, August, and December at 00:00 UTC
   workflow_dispatch: # Manual run
 
 jobs:
@@ -57,3 +57,28 @@ jobs:
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
         run: |
           python apps/scrapers/reddit-scraper.py
+
+  rmp-scraper:
+    needs: course-scraper
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/scrapers/requirements.txt
+
+      - name: Run RMP scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python apps/scrapers/rmp-scraper.py
