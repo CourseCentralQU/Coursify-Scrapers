@@ -122,8 +122,6 @@ def scrape_all_course():
     
     # Faculty 2: Education
     print("Scraping Education courses...")
-    results = requests.get(education_url, headers=headers)
-    education_main_url_content = BeautifulSoup(results.content, "html.parser")
 
     # Step 1: Get the main URL content
     results = requests.get(education_url, headers=headers)
@@ -363,14 +361,36 @@ def scrape_all_course():
 
     return course_data
 
-def insert_course_data_to_supabase(supabase, course_data):
+def upsert_course_data_to_supabase(supabase, course_data, batch_size=50):
     """
-    Insert the scraped course data into Supabase.
-    """    
-    # Insert the course data into Supabase
+    Upsert course data into Supabase, updating if already exists.
+    Preserve average_gpa and average_enrollment if course already exists.
+    """
+
+    existing_courses_response = supabase.table("courses").select("course_code, average_gpa, average_enrollment").execute()
+
+    existing_courses = {
+        course["course_code"]: {
+            "average_gpa": course["average_gpa"],
+            "average_enrollment": course["average_enrollment"]
+        }
+        for course in existing_courses_response.data
+    }
+
+    upsert_payload = []
+
     for index, row in course_data.iterrows():
-        supabase.table("courses").insert({
-            "course_code": row["course_code"],
+        course_code = row["course_code"]
+
+        if course_code in existing_courses:
+            avg_gpa = existing_courses[course_code]["average_gpa"]
+            avg_enroll = existing_courses[course_code]["average_enrollment"]
+        else:
+            avg_gpa = None
+            avg_enroll = None
+
+        upsert_payload.append({
+            "course_code": course_code,
             "course_name": row["course_name"],
             "course_description": row["course_description"],
             "offering_faculty": row["offering_faculty"],
@@ -379,47 +399,17 @@ def insert_course_data_to_supabase(supabase, course_data):
             "course_requirements": row["course_requirements"],
             "course_equivalencies": row["course_equivalencies"],
             "course_units": row["course_units"],
-            "average_gpa": None,  # Placeholder for average GPA
-            "average_enrollment": None  # Placeholder for average enrollment
-        }).execute()
-        print(f"Inserted course: {row['course_code']} - {row['course_name']}")
+            "average_gpa": avg_gpa,
+            "average_enrollment": avg_enroll,
+        })
 
-    print("✔ Successfully inserted course data into Supabase!")
+        # If batch size reached or last row, send to Supabase
+        if len(upsert_payload) == batch_size or index == len(course_data) - 1:
+            supabase.table("courses").upsert(upsert_payload, on_conflict=["course_code"]).execute()
+            print(f"✅ Upserted {len(upsert_payload)} courses")
+            upsert_payload.clear()
 
-def check_and_add_new_courses(supabase, course_data):
-    """
-    Check for new courses and add them to Supabase if they don't already exist.
-    """
-    # Fetch existing courses from Supabase
-    existing_courses_response = supabase.table("courses").select("course_code").execute()
-    if existing_courses_response.error:
-        print(f"Error fetching existing courses: {existing_courses_response.error}")
-        return
-
-    # Extract existing course codes
-    existing_course_codes = {course["course_code"] for course in existing_courses_response.data}
-
-    # Filter new courses
-    new_courses = course_data[~course_data["course_code"].isin(existing_course_codes)]
-
-    # Insert new courses into Supabase
-    for index, row in new_courses.iterrows():
-        supabase.table("courses").insert({
-            "course_code": row["course_code"],
-            "course_name": row["course_name"],
-            "course_description": row["course_description"],
-            "offering_faculty": row["offering_faculty"],
-            "learning_hours": row["learning_hours"],
-            "course_learning_outcomes": row["course_learning_outcomes"],
-            "course_requirements": row["course_requirements"],
-            "course_equivalencies": row["course_equivalencies"],
-            "course_units": row["course_units"],
-            "average_gpa": None,  # Placeholder for average GPA
-            "average_enrollment": None  # Placeholder for average enrollment
-        }).execute()
-        print(f"Added new course: {row['course_code']} - {row['course_name']}")
-
-    print(f"✔ Successfully added {len(new_courses)} new courses to Supabase!")
+    print("✔ Successfully batch upserted all course data into Supabase!")
 
 
 if __name__ == "__main__":
@@ -430,7 +420,7 @@ if __name__ == "__main__":
     course_data = scrape_all_course()
     
     # Check for new courses and add them to Supabase
-    check_and_add_new_courses(supabase, course_data)
+    upsert_course_data_to_supabase(supabase, course_data)
 
     # Print success message
     print("✔ Periodic course data check and update completed successfully!")
