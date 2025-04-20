@@ -474,6 +474,7 @@ def scrape_professor_comments(prof, valid_courses):
                 "quality_rating": review["quality"],
                 "sentiment_score": review["sentiment_score"],
                 "sentiment_label": review["sentiment_label"],
+                "difficulty_rating": review["difficulty"],
             }
             supabase.table("rag_chunks").insert(comment_data).execute()
 
