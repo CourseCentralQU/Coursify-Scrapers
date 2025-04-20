@@ -27,7 +27,7 @@ def create_supabase_client():
     """
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-    supabase: Client = create_client(SUPABASE_KEY, SUPABASE_URL)
+    supabase: Client = create_client(SUPABASE_URL,SUPABASE_KEY)
     return supabase
 
 def is_valid_comment(comment):
@@ -234,13 +234,13 @@ def scrape_professors(testing=True):
                 # Safety: check if it's visible and enabled
                 if show_more_button.is_displayed() and show_more_button.is_enabled():
                     show_more_button.click()
-                    print("Clicked 'Show More'")
+                    # print("Clicked 'Show More'")
                 else:
-                    print("'Show More' button not clickable anymore.")
+                    # print("'Show More' button not clickable anymore.")
                     break
 
             except NoSuchElementException:
-                print("No 'Show More' button found at all.")
+                # print("No 'Show More' button found at all.")
                 break
 
             # Testing mode: Limit pages
@@ -438,22 +438,25 @@ def scrape_professor_comments(prof, valid_courses):
                 # Safety: check if it's visible and enabled
                 if load_more_button.is_displayed() and load_more_button.is_enabled():
                     load_more_button.click()
-                    print("Clicked 'Load More Ratings'")
+                    # print("Clicked 'Load More Ratings'")
                 else:
-                    print("'Load More Ratings' button not clickable anymore.")
+                    # print("'Load More Ratings' button not clickable anymore.")
                     break
             except NoSuchElementException:
-                print("No 'Load More Ratings' button found at all.")
+                # print("No 'Load More Ratings' button found at all.")
                 break
 
         # Update the professor object with the scraped data
         updated_prof = {
+            "id": prof["id"],
+            "name": prof["name"],
             "overall_rating": overall_rating,
             "percent_retake": percent_take_again,
             "level_of_difficulty": level_of_difficulty,
             "professor_tags": top_tags,
             "latest_comment_date": reviews[0]["date"] if reviews else None,
             "num_ratings": prof["num_ratings"],
+            "url": prof["url"],
         }
         
         supabase.table("professors").upsert(updated_prof, on_conflict=["id"]).execute()
@@ -472,7 +475,7 @@ def scrape_professor_comments(prof, valid_courses):
                 "sentiment_score": review["sentiment_score"],
                 "sentiment_label": review["sentiment_label"],
             }
-            supabase.table("comments").insert(comment_data).execute()
+            supabase.table("rag_chunks").insert(comment_data).execute()
 
     finally:
         driver.quit()
@@ -495,5 +498,7 @@ if __name__ == "__main__":
 
     # Iterate through the professors that need to be scraped
     for prof in professors_to_scrape:
-        scrape_professor_comments(prof, valid_courses)      
+        scrape_professor_comments(prof, valid_courses)
+
+    print("Scraping complete") 
     
