@@ -145,40 +145,23 @@ def is_comment_of_interest(comment):
     return True
 
 def extract_course_code_from_post(post):
-    """
-    Extract the first detected course code from a Reddit post's title or selftext.
-    Matches formats like 'BIOL 102', 'CISC124', case-insensitive.
-    
-    Returns:
-        course_code (str) if found, otherwise None
-    """
-    # Combine title and selftext for full scanning
     full_text = f"{post.title} {post.selftext}"
-
-    # Search for course codes
     match = COURSE_CODE_REGEX.search(full_text)
     
     if match:
-        # Normalize: remove spaces and make uppercase
         course_code = match.group(0).replace(" ", "").upper()
+        # Insert a space between letters and digits
+        course_code = re.sub(r"([A-Z]{4})(\d{3})", r"\1 \2", course_code)
         return course_code
     else:
         return None
-    
+
 def extract_course_code_from_comment(comment):
-    """
-    Extract the first detected course code from a Reddit comment's body.
-    Matches formats like 'BIOL 102', 'CISC124', case-insensitive.
-    
-    Returns:
-        course_code (str) if found, otherwise None
-    """
-    # Search for course codes
     match = COURSE_CODE_REGEX.search(comment.body)
     
     if match:
-        # Normalize: remove spaces and make uppercase
         course_code = match.group(0).replace(" ", "").upper()
+        course_code = re.sub(r"([A-Z]{4})(\d{3})", r"\1 \2", course_code)
         return course_code
     else:
         return None
@@ -216,6 +199,14 @@ def is_post_of_interest(post):
     # ✅ Otherwise, looks interesting!
     return True
     
+def clean_text(text):
+    # Replace multiple newlines with a single newline
+    text = re.sub(r'\n\s*\n', '\n\n', text)
+    # Remove leading/trailing spaces
+    text = text.strip()
+    # Optionally, replace bullets like 'a)' or 'b)' with dashes
+    text = re.sub(r'^[a-z]\)', '-', text, flags=re.MULTILINE)
+    return text
 
 def scrape_and_store():
     subreddit = reddit.subreddit("queensuniversity")
@@ -226,9 +217,9 @@ def scrape_and_store():
     processed_posts_urls = {post["source_url"] for post in processed_posts.data}
 
     for post in subreddit.new(limit=1000):
-
+       
         # Check if the post has already been processed
-        if f"https://reddit.com{post.permalink}" in processed_posts_urls:
+        if post.url in processed_posts_urls:
             print(f"Skipping already processed post: {post.title[:60]}...")
             continue
 
@@ -274,21 +265,19 @@ def scrape_and_store():
                 "text": comment.body,
                 "source": "reddit",
                 "course_code": temp_course_code,
-                "source_url": f"https://reddit.com{comment.permalink}",
+                "source_url": post.url,
                 "tags": tags,
                 "professor_name": prof_name,
                 "sentiment_score": sentiment_score,
                 "sentiment_label": sentiment_label,
                 "upvotes": comment.score,
-                "created_at": datetime.utcfromtimestamp(comment.created_utc).isoformat(),
+                "created_at": datetime.utcfromtimestamp(comment.created_utc).date().isoformat(),
             }
 
+            # print(comment_data)
+
             # Insert into Supabase
-            response = supabase.table("rag_chunks").insert(comment_data).execute()
-            if response.get("status_code") == 201:
-                print(f"✅ Inserted comment: {comment.body[:60]}...")
-            else:
-                print(f"❌ Failed to insert comment: {response.get('error')}")
+            supabase.table("rag_chunks").insert(comment_data).execute()
 
             results.append(comment_data)
 
@@ -301,4 +290,3 @@ if __name__ == "__main__":
 
     # Scrape and store comments
     scraped_data = scrape_and_store()
-    print(f"Scraped and stored {len(scraped_data)} comments.")
