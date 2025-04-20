@@ -368,10 +368,6 @@ def upsert_course_data_to_supabase(supabase, course_data, batch_size=50):
     """
 
     existing_courses_response = supabase.table("courses").select("course_code, average_gpa, average_enrollment").execute()
-    
-    if existing_courses_response.error:
-        print(f"❌ Error fetching existing courses: {existing_courses_response.error}")
-        return
 
     existing_courses = {
         course["course_code"]: {
