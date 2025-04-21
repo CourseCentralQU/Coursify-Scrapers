@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
 import time
 from textblob import TextBlob
 from supabase import create_client, Client
@@ -301,6 +302,7 @@ def scrape_professor_comments(supabase, prof, valid_courses):
     options.add_argument("--log-level=3")
 
     driver = webdriver.Chrome(options=options)
+    driver.set_page_load_timeout(20)
 
     # Log Message
     print(f"Scraping comments for {prof['name']}...")
@@ -308,8 +310,12 @@ def scrape_professor_comments(supabase, prof, valid_courses):
     print(prof["url"])
 
     try:
-        # Open the professor's page
-        driver.get(prof["url"])
+        try:
+            driver.get(prof["url"])
+        except TimeoutException:
+            print(f"Timeout while loading {prof['url']}. Skipping...")
+            return
+        
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CLASS_NAME, "RatingValue__Numerator-qw8sqy-2"))
         )
@@ -418,7 +424,6 @@ def scrape_professor_comments(supabase, prof, valid_courses):
                             course_codes = ["general_course"]
 
                         for course in course_codes:
-                            date
                             parsed_review = {
                                 "date": date,
                                 "quality": quality,
@@ -466,21 +471,28 @@ def scrape_professor_comments(supabase, prof, valid_courses):
         supabase.table("professors").upsert(updated_prof, on_conflict=["id"]).execute()
 
         # Insert the reviews into the database
-        for review in reviews:
-            comment_data = {
-                "text": review["comment"],
-                "source": "ratemyprofessors",
-                "course_code": review["course_code"],
-                "professor_name": prof["name"],
-                "source_url": prof["url"],
-                "tags": review["tags"],
-                "created_at": review["date"],
-                "quality_rating": review["quality"],
-                "sentiment_score": review["sentiment_score"],
-                "sentiment_label": review["sentiment_label"],
-                "difficulty_rating": review["difficulty"],
-            }
-            supabase.table("rag_chunks").insert(comment_data).execute()
+        if reviews:
+            comment_data_batch = []
+            for review in reviews:
+                comment_data = {
+                    "text": review["comment"],
+                    "source": "ratemyprofessors",
+                    "course_code": review["course_code"],
+                    "professor_name": prof["name"],
+                    "source_url": prof["url"],
+                    "tags": review["tags"],
+                    "created_at": review["date"],
+                    "quality_rating": review["quality"],
+                    "sentiment_score": review["sentiment_score"],
+                    "sentiment_label": review["sentiment_label"],
+                    "difficulty_rating": review["difficulty"],
+                }
+                comment_data_batch.append(comment_data)
+
+            supabase.table("rag_chunks").insert(comment_data_batch).execute()
+            print(f"Inserted {len(comment_data_batch)} reviews for {prof['name']}")
+        else:
+            print(f"No reviews found for {prof['name']}")
 
     finally:
         driver.quit()
