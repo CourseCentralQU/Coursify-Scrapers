@@ -285,7 +285,6 @@ def to_scrape_professor(supabase, professors):
             prof["latest_comment_date"] = None
             professors_to_scrape.append(prof)
             
-    
     return professors_to_scrape
 
 def safe_float(text):
@@ -528,13 +527,21 @@ if __name__ == "__main__":
 
     # Get the professors that need to be scraped
     professors_to_scrape = to_scrape_professor(supabase, professors)
+    count_professors_to_scrape = len(professors_to_scrape)
+    print(f"Number of professors to scrape: {count_professors_to_scrape}")
 
     # Get all of the valid courses from the database
     valid_courses = get_all_valid_courses(supabase)
 
     # Iterate through the professors that need to be scraped
+    scraped_count = 0
     for prof in professors_to_scrape:
         scrape_professor_comments(supabase, prof, valid_courses)
+        # Print what the current count is, and the remaining profs to be scraped
+        scraped_count += 1
+        print(f"Scraped {scraped_count}/{count_professors_to_scrape} professors")
+        # Sleep for a bit to avoid being blocked
+        time.sleep(1)
 
     print("Scraping complete") 
     
