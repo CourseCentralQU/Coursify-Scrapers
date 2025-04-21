@@ -1,0 +1,23 @@
+How is data stored inside of rag_chunks:
+- course_code is stored:
+    - as 'general' if there is an associated prof, else skipped
+    - as the course code, regardless of whether there is an associated prof or not
+- professor_name is stored:
+    - as NULL if there is no associated prof
+    - as the prof name if there is an associated prof
+
+
+reddit-scraper:
+    - This will only get comments that:
+        - have course_code, and no prof ('general_prof')
+        - have course_code, and prof
+        - have no course_code (stored as 'general_course'), and prof
+
+rmp-scraper:
+    - This will only get comments that: (by nature of design, there will ALWAYS be a prof name)
+        - have course_code, and prof
+        - have no course_code (stored as 'general_course'), and prof
+
+
+By default, the database table courses will have an entry called 'general_course'
+By default, the database table professors will have an entry called an entry called 'general_professor'

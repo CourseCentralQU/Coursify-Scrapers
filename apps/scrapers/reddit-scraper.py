@@ -208,7 +208,7 @@ def clean_text(text):
     text = re.sub(r'^[a-z]\)', '-', text, flags=re.MULTILINE)
     return text
 
-def scrape_and_store():
+def scrape_and_store(courses, professors):
     subreddit = reddit.subreddit("queensuniversity")
     results = []
 
@@ -274,12 +274,23 @@ def scrape_and_store():
                 "created_at": datetime.utcfromtimestamp(comment.created_utc).date().isoformat(),
             }
 
-            # print(comment_data)
+            # If the course code is None (aka 'general_course'), check if there is an associated professor, if not, skip the comment
+            if temp_course_code is None:
+                if prof_name is not None:
+                    comment_data["course_code"] = "general_course"
+                    supabase.table("rag_chunks").insert(comment_data).execute()
+                    results.append(comment_data)
 
-            # Insert into Supabase
-            supabase.table("rag_chunks").insert(comment_data).execute()
-
-            results.append(comment_data)
+            # If the course code is in the list of valid courses, insert the comment into the database
+            if temp_course_code in courses.data and temp_course_code != None:
+                # If the professor name is in the list of valid professors, insert the comment into the database
+                if prof_name in professors.data:
+                    comment_data["professor_name"] = prof_name
+                else:
+                    comment_data["professor_name"] = 'general_prof'
+                
+                supabase.table("rag_chunks").insert(comment_data).execute()
+                results.append(comment_data)
 
     return results
 
@@ -288,5 +299,17 @@ if __name__ == "__main__":
     supabase = create_supabase_client()
     reddit = setup_reddit()
 
+    # Get all valid courses from Supabase
+    courses = supabase.table("courses").select("course_code").execute()
+    # get rid of the course where course_code = 'general_course'
+    courses = [s for s in courses.data if s["course_code"] != "general_course"]
+    courses = {course["course_code"] for course in courses}
+
+    # Get all valid professors from Supabase
+    professors = supabase.table("professors").select("name").execute()
+    # get rid of the professor where name = 'general_prof'
+    professors = [s for s in professors.data if s["name"] != "general_prof"]
+    professors = {professor["name"] for professor in professors}
+
     # Scrape and store comments
-    scraped_data = scrape_and_store()
+    scraped_data = scrape_and_store(courses, professors)

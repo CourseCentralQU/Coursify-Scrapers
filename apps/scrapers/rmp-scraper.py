@@ -46,8 +46,8 @@ def get_all_valid_courses():
     """
     # Query the database for all valid courses
     valid_courses = supabase.table("courses").select("course_code").execute().data
-    # Extract course codes from the result
-    valid_course_codes = {course["course_code"] for course in valid_courses}
+    # Extract course codes from the result if the course_code is not 'general_course'
+    valid_course_codes = {course["course_code"] for course in valid_courses if course["course_code"] != "general_course"}
     
     return valid_course_codes
 
@@ -250,6 +250,9 @@ def scrape_professors(testing=True):
     finally:
         driver.quit()
 
+    # Professors are supposed to be unique according to the name
+    professors = {prof["name"]: prof for prof in professors}.values()
+
     return professors
 
 def to_scrape_professor(professors):
@@ -258,11 +261,12 @@ def to_scrape_professor(professors):
     '''
     professors_to_scrape = []
     
-    # Query the database for the professors that have already been scraped - from the professors table get the name, num_ratings, latest_comment_date
+    # Query the database for the professors that have already been scraped - from the professors table get the name, num_ratings, latest_comment_date - ignore the entry where the name is 'general_professor'
     previous_professors = supabase.table("professors").select("name, num_ratings, latest_comment_date").execute().data
     previous_professors_dict = {
         prof["name"]: (prof["num_ratings"], prof["latest_comment_date"])
         for prof in previous_professors
+        if prof["name"] != "general_professor"
     }
 
     # Iterate through the professors scraped from the website
@@ -411,7 +415,7 @@ def scrape_professor_comments(prof, valid_courses):
                         review_tags = [tag.text.strip() for tag in tag_spans]
 
                         if not course_codes:
-                            course_codes = ["general"]
+                            course_codes = ["general_course"]
 
                         for course in course_codes:
                             date
