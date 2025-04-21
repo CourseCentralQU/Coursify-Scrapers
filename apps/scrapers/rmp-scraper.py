@@ -287,7 +287,12 @@ def to_scrape_professor(supabase, professors):
             
     
     return professors_to_scrape
-    
+
+def safe_float(text):
+    try:
+        return float(text)
+    except (ValueError, TypeError):
+        return None 
 
 def scrape_professor_comments(supabase, prof, valid_courses):
     """
@@ -321,16 +326,26 @@ def scrape_professor_comments(supabase, prof, valid_courses):
         )
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
+        has_reviews = prof["num_ratings"] > 0
+
         # Extract items from the professors page
 
         # 1) Overall Rating
         rating_elem = soup.select_one("div.RatingValue__Numerator-qw8sqy-2")
-        overall_rating = float(rating_elem.text.strip()) if rating_elem else None
+        overall_rating = None
+        if has_reviews:
+            text = rating_elem.text.strip() if rating_elem else None
+            overall_rating = safe_float(text)
 
         # 2) % would take again and overall difficulty rating
         feedback_numbers = soup.select("div.FeedbackItem__FeedbackNumber-uof32n-1")
-        percent_take_again = float(feedback_numbers[0].text.strip('%')) if len(feedback_numbers) > 0 else None
-        level_of_difficulty = float(feedback_numbers[1].text.strip()) if len(feedback_numbers) > 1 else None
+        percent_take_again = None
+        level_of_difficulty = None
+        if has_reviews:
+            if len(feedback_numbers) > 0:
+                percent_take_again = safe_float(feedback_numbers[0].text.strip('%'))
+            if len(feedback_numbers) > 1:
+                level_of_difficulty = safe_float(feedback_numbers[1].text.strip())
 
         # 3) Top Tags
         top_tags = [
@@ -366,6 +381,10 @@ def scrape_professor_comments(supabase, prof, valid_courses):
 
         while True:
             time.sleep(1)
+
+            # If the prof has no reviews, skip to the next one
+            if not has_reviews:
+                break
 
             # --- Extract Student Reviews ---
             reviews_list = soup.select_one("ul#ratingsList")
