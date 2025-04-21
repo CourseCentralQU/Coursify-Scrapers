@@ -299,17 +299,17 @@ if __name__ == "__main__":
     supabase = create_supabase_client()
     reddit = setup_reddit()
 
-    # Get all valid courses from Supabase
-    courses = supabase.table("courses").select("course_code").execute()
-    # get rid of the course where course_code = 'general_course'
-    courses = [s for s in courses.data if s["course_code"] != "general_course"]
-    courses = {course["course_code"] for course in courses}
+   # Get all valid courses from Supabase
+    courses_response = supabase.table("courses").select("course_code").execute()
+    courses = courses_response.data  # <-- .data gives you the list
+    courses = [c for c in courses if c["course_code"] != "general_course"]
+    courses = {c["course_code"] for c in courses}
 
     # Get all valid professors from Supabase
-    professors = supabase.table("professors").select("name").execute()
-    # get rid of the professor where name = 'general_prof'
-    professors = [s for s in professors.data if s["name"] != "general_prof"]
-    professors = {professor["name"] for professor in professors}
+    professors_response = supabase.table("professors").select("name").execute()
+    professors = professors_response.data
+    professors = [p for p in professors if p["name"] != "general_prof"]
+    professors = {p["name"] for p in professors}
 
     # Scrape and store comments
     scraped_data = scrape_and_store(courses, professors)

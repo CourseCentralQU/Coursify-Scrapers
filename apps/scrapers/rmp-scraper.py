@@ -40,7 +40,7 @@ def is_valid_comment(comment):
     
     return True
 
-def get_all_valid_courses():
+def get_all_valid_courses(supabase):
     """
     Get all valid courses from the database.
     """
@@ -164,7 +164,7 @@ def detect_sentiment(text):
 
     return sentiment_score, sentiment_label
 
-def scrape_professors(testing=True):
+def scrape_professors(supabase, testing=True):
     url = f"https://www.ratemyprofessors.com/search/professors/{UNIVERSITY_ID}?q=*"
 
     options = Options()
@@ -255,7 +255,7 @@ def scrape_professors(testing=True):
 
     return professors
 
-def to_scrape_professor(professors):
+def to_scrape_professor(supabase, professors):
     '''
     Returns a list of the professors that need to be scraped.    
     '''
@@ -266,7 +266,7 @@ def to_scrape_professor(professors):
     previous_professors_dict = {
         prof["name"]: (prof["num_ratings"], prof["latest_comment_date"])
         for prof in previous_professors
-        if prof["name"] != "general_professor"
+        if prof["name"] != "general_prof"
     }
 
     # Iterate through the professors scraped from the website
@@ -274,7 +274,7 @@ def to_scrape_professor(professors):
         # Check if the professor is already in the database
         if prof["name"] in previous_professors_dict:
             # If the num_ratings is different, we need to scrape it again
-            if prof["num_ratings"] != previous_professors_dict[prof["name"]]:
+            if prof["num_ratings"] != previous_professors_dict[prof["name"]][0]:
                 # Also, attach the latest_comment_date to the professor object
                 prof["latest_comment_date"] = previous_professors_dict[prof["name"]][1]
                 professors_to_scrape.append(prof)
@@ -288,7 +288,7 @@ def to_scrape_professor(professors):
     return professors_to_scrape
     
 
-def scrape_professor_comments(prof, valid_courses):
+def scrape_professor_comments(supabase, prof, valid_courses):
     """
     Given a professor object scrape detailed rating information.
     """
@@ -493,17 +493,17 @@ if __name__ == "__main__":
     supabase = create_supabase_client()
 
     # Get all of the professors from the website
-    professors = scrape_professors(testing=False)
+    professors = scrape_professors(supabase, testing=False)
 
     # Get the professors that need to be scraped
-    professors_to_scrape = to_scrape_professor(professors)
+    professors_to_scrape = to_scrape_professor(supabase, professors)
 
     # Get all of the valid courses from the database
-    valid_courses = get_all_valid_courses()
+    valid_courses = get_all_valid_courses(supabase)
 
     # Iterate through the professors that need to be scraped
     for prof in professors_to_scrape:
-        scrape_professor_comments(prof, valid_courses)
+        scrape_professor_comments(supabase, prof, valid_courses)
 
     print("Scraping complete") 
     
