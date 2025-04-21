@@ -213,7 +213,7 @@ def scrape_and_store(courses, professors):
     results = []
 
     # Fetch already processed posts from Supabase by using post url (source_url)
-    processed_posts = supabase.table("rag_chunks").select("source_url").execute()
+    processed_posts = supabase.table("rag_chunks").select("source_url").eq("source", "reddit").execute()
     processed_posts_urls = {post["source_url"] for post in processed_posts.data}
 
     for post in subreddit.new(limit=1000):
@@ -282,9 +282,9 @@ def scrape_and_store(courses, professors):
                     results.append(comment_data)
 
             # If the course code is in the list of valid courses, insert the comment into the database
-            if temp_course_code in courses.data and temp_course_code != None:
+            if temp_course_code is not None and temp_course_code in courses:
                 # If the professor name is in the list of valid professors, insert the comment into the database
-                if prof_name in professors.data:
+                if prof_name in professors:
                     comment_data["professor_name"] = prof_name
                 else:
                     comment_data["professor_name"] = 'general_prof'
