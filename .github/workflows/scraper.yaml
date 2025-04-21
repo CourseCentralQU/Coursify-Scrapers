@@ -3,12 +3,10 @@ name: Run Scrapers
 on:
   schedule:
     - cron: "0 0 * * 0" # Every Sunday
-    - cron: "0 0 1 5,8,12 *" # 1st of May, August, and December at 00:00 UTC
-  workflow_dispatch: # Manual run
+  workflow_dispatch: # Allow manual run
 
 jobs:
   course-scraper:
-    if: github.event.schedule == '0 0 1 * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
@@ -60,6 +58,7 @@ jobs:
 
   rmp-scraper:
     needs: course-scraper
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && startsWith(github.event.schedule, '0 0 1')) # Only run on 1st of month or manual
     runs-on: ubuntu-latest
 
     steps:
