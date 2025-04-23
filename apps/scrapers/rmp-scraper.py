@@ -138,10 +138,10 @@ def clean_and_map_course_codes(course_codes, valid_courses):
             else:
                 matches = None
 
-        if not matches:
-            matches = None
-
-        course_mapping[raw_code] = matches
+        if len(matches) == 1:
+            course_mapping[raw_code] = matches
+        else:
+            course_mapping[raw_code] = None
 
     return course_mapping   
 
@@ -255,6 +255,9 @@ def scrape_professors(supabase, testing=True):
     professors = {prof["name"]: prof for prof in professors}.values()
 
     return professors
+
+def normalize_comment(text):
+    return re.sub(r"\s+", " ", text.strip().lower())    
 
 def to_scrape_professor(supabase, professors):
     '''
@@ -374,6 +377,11 @@ def scrape_professor_comments(supabase, prof, valid_courses):
 
         course_code_mappings = clean_and_map_course_codes(all_courses, valid_courses)
 
+        # Get all of the previous comments from the database
+        response = supabase.table("rag_chunks").select("text", "created_at").eq("professor_name", prof["name"]).execute()
+        existing_reviews_set = set((r["text"].strip(), r["created_at"]) for r in response.data)
+        seen_reviews_set = set()
+        
         # Start loopin through all of the comments
         reviews = []
         stop_scraping = False
@@ -441,19 +449,25 @@ def scrape_professor_comments(supabase, prof, valid_courses):
                         if not course_codes:
                             course_codes = ["general_course"]
 
-                        for course in course_codes:
-                            parsed_review = {
-                                "date": date,
-                                "quality": quality,
-                                "difficulty": difficulty,
-                                "comment": comment,
-                                "tags": review_tags,
-                                "sentiment_score": sentiment_score,
-                                "sentiment_label": sentiment_label,
-                                "course_code": course,
-                            }
+                        # Check to see if the review is a duplicate
+                        normalized_comment = normalize_comment(comment)
+                        if (normalized_comment, date) in existing_reviews_set or (normalized_comment, date) in seen_reviews_set:
+                            continue
+                        seen_reviews_set.add((normalized_comment, date))
 
-                            reviews.append(parsed_review)
+                        parsed_review = {
+                            "date": date,
+                            "quality": quality,
+                            "difficulty": difficulty,
+                            "comment": normalized_comment,
+                            "tags": review_tags,
+                            "sentiment_score": sentiment_score,
+                            "sentiment_label": sentiment_label,
+                            "course_code": course,
+                        }
+
+                        reviews.append(parsed_review)
+                        
                     except Exception as e:
                         print(f"Skipping one review, error: {e}")
             if stop_scraping:
@@ -473,6 +487,10 @@ def scrape_professor_comments(supabase, prof, valid_courses):
                 # print("No 'Load More Ratings' button found at all.")
                 break
 
+        date = None
+        if len(reviews) > 0:
+            date = reviews[0]["date"]
+        
         # Update the professor object with the scraped data
         updated_prof = {
             "id": prof["id"],
@@ -481,7 +499,7 @@ def scrape_professor_comments(supabase, prof, valid_courses):
             "percent_retake": percent_take_again,
             "level_of_difficulty": level_of_difficulty,
             "professor_tags": top_tags,
-            "latest_comment_date": reviews[0]["date"] if reviews else None,
+            "latest_comment_date": date,
             "num_ratings": prof["num_ratings"],
             "url": prof["url"],
         }
