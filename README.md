@@ -15,9 +15,9 @@ This project is split across multiple repositories:
 
 | Repository | Purpose |
 |-----------|---------|
-| [CourseCentralQU-Scrapers](https://github.com/your-username/CourseCentralQU-Scrapers) | Handles scraping data from Queen’s calendar, Reddit, and RateMyProf |
-| [CourseCentralQU-RAG](https://github.com/your-username/CourseCentralQU-RAG) | Fine-tunes embeddings and manages vector DB for retrieval |
-| [CourseCentralQU-Web](https://github.com/your-username/CourseCentralQU-Web) | Frontend built in Next.js for the public-facing site |
+| [CourseCentralQU-Scrapers](https://github.com/CourseCentralQU/CourseCentral-Scrapers) | Handles scraping data from Queen’s calendar, Reddit, and RateMyProf |
+| **CourseCentralQU-RAG** (🚧 under construction) | Fine-tunes embeddings and manages vector DB for retrieval |
+| [CourseCentralQU-Web](https://github.com/CourseCentralQU/CourseCentral-WebApp) | Frontend built in Next.js for the public-facing site |
 
 > 🔗 Live Website: [CourseCentralQU](https://course-central-web-1p9pc64uw-amaans-projects-0cfc711a.vercel.app/)
 
