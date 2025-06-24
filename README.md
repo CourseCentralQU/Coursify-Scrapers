@@ -1,6 +1,6 @@
-# 📚 CourseCentralQU – Scrapers
+# 📚 CoursifyQU – Scrapers
 
-A scraping pipeline for [CourseCentralQU](https://course-central-web-1p9pc64uw-amaans-projects-0cfc711a.vercel.app/), a course insights platform built for Queen's University students. This repository powers the data collection layer for a system that:
+A scraping pipeline for Coursify, a course insights platform built for Queen's University students. This repository powers the data collection layer for a system that:
 
 - Displays **historic grade distribution data** for courses.
 - Hosts a **RAG-powered chatbot** trained on real student feedback from Reddit and RateMyProfessors.
