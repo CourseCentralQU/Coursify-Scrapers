@@ -19,13 +19,11 @@ This project is split across multiple repositories:
 | **CourseCentralQU-RAG** (🚧 under construction) | Fine-tunes embeddings and manages vector DB for retrieval |
 | [CourseCentralQU-Web](https://github.com/CourseCentralQU/CourseCentral-WebApp) | Frontend built in Next.js for the public-facing site |
 
-> 🔗 Live Website: [CourseCentralQU](https://course-central-web-1p9pc64uw-amaans-projects-0cfc711a.vercel.app/)
-
 ---
 
 ## ⚙️ How It Works
 
-CourseCentralQU's scraper system is designed to be modular, scalable, and reliable. Here’s a breakdown of how the data collection pipeline functions:
+Coursify's scraper system is designed to be modular, scalable, and reliable. Here’s a breakdown of how the data collection pipeline functions:
 
 ### 1. **GitHub Actions Scheduled Runs**
 - **Reddit Scraper:** Runs **weekly** to keep up with fast-paced Reddit discussions.
@@ -52,9 +50,3 @@ Each scraper is a self-contained Python module, triggered automatically using Gi
 - Uses Selenium + BeautifulSoup to scrape professor reviews from RateMyProfessors.
 - Handles comment deduplication using the `latest_comment_date` field.
 - Maps scraped course mentions to valid Queen’s courses using a custom two-pass cleaning algorithm.
-
----
-
-## 🛠️ Setup Instructions
-
-> Coming soon...
