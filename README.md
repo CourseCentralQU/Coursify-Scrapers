@@ -15,9 +15,9 @@ This project is split across multiple repositories:
 
 | Repository | Purpose |
 |-----------|---------|
-| [CourseCentralQU-Scrapers](https://github.com/CourseCentralQU/CourseCentral-Scrapers) | Handles scraping data from Queen’s calendar, Reddit, and RateMyProf |
-| **CourseCentralQU-RAG** (🚧 under construction) | Fine-tunes embeddings and manages vector DB for retrieval |
-| [CourseCentralQU-Web](https://github.com/CourseCentralQU/CourseCentral-WebApp) | Frontend built in Next.js for the public-facing site |
+| [Coursify-Scrapers](https://github.com/CoursifyQU/Coursify-Scrapers) | Handles scraping data from Queen’s calendar, Reddit, and RateMyProf |
+| **Coursify-RAG** (🚧 under construction) | Fine-tunes embeddings and manages vector DB for retrieval |
+| [Coursify-Web](https://github.com/CoursifyQU/Coursify-WebApp) | Frontend built in Next.js for the public-facing site |
 
 ---
 
